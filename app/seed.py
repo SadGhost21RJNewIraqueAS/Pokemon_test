@@ -7,6 +7,7 @@ from app.database import Base, SessionLocal, engine
 from app.models import Administrador, Pesquisador, Treinador, Usuario
 
 SENHA_PADRAO = "Pokemon@123"
+DOMINIO_LEGADO = "pokedex.local"
 
 USUARIOS_SEED = (
     ("Ash Ketchum", "ash@pokedex.example.com", Treinador),
@@ -31,6 +32,12 @@ def seed_users(db: Session) -> int:
 
     for nome, email, classe_usuario in USUARIOS_SEED:
         existente = db.query(Usuario).filter(Usuario.email == email).first()
+        if existente is None:
+            email_legado = email.replace("pokedex.example.com", DOMINIO_LEGADO)
+            existente = db.query(Usuario).filter(Usuario.email == email_legado).first()
+            if existente:
+                existente.email = email
+                criados += 1
         if existente:
             continue
 
