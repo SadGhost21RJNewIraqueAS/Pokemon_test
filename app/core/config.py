@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = Field(default=60, gt=0)
     pokeapi_base_url: str = "https://pokeapi.co/api/v2"
+    seed_default_users: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

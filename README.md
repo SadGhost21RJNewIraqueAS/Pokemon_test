@@ -1,122 +1,209 @@
-# Sistema Pokedex Digital — API FastAPI
+# Pokédex Digital API
 
-Implementação baseada no **diagrama de classe** fornecido (Usuario abstrato
-especializado em Treinador/Pesquisador/Administrador, Pokemon, Tipo,
-Evolucao, Captura, Proposta, LogAuditoria).
+API REST desenvolvida com FastAPI para gerenciar espécies de Pokémon, capturas, favoritos, propostas de alteração, autenticação e relatórios.
 
-## Instalação
+## Responsabilidades do projeto
+
+| Pessoa | Perfil | Responsabilidades |
+|---|---|---|
+| Pessoa 1 | **Treinador** | Registrar capturas, marcar favoritos, comparar Pokémon, consultar a Pokédex pessoal e acompanhar evoluções. |
+| Pessoa 2 | **Pesquisador** | Cadastrar espécies, registrar evoluções e enviar propostas de alteração. |
+| Pessoa 3 | **Administrador** | Aprovar ou rejeitar propostas, editar ou remover registros, consultar relatórios e acessar a auditoria. |
+| Pessoa 4 | **Autenticação / Usuários** | Gerenciar usuários, cadastro, login, JWT/OAuth2, recuperação de senha e permissões por perfil. |
+| Pessoa 5 | **API Pública / Pokémon** | Consultar Pokémon, tipos, atributos, evoluções e integrar dados da [PokéAPI](https://pokeapi.co/). |
+
+## Tecnologias
+
+- **FastAPI:** endpoints HTTP e documentação interativa em `/docs`.
+- **SQLAlchemy:** modelos, relacionamentos e acesso ao banco de dados.
+- **SQLite:** banco local para desenvolvimento.
+- **PostgreSQL:** banco recomendado para produção no Render.
+- **Pydantic:** validação dos dados de entrada e saída.
+- **JWT com OAuth2:** autenticação das rotas protegidas.
+- **PokéAPI:** consulta externa de dados de Pokémon.
+
+## Executar localmente
+
+No PowerShell, dentro da pasta do projeto:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m fastapi dev app/main.py
+```
+
+Se a ativação do ambiente virtual for bloqueada:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+Acesse:
+
+- Swagger: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+- Health check: `http://127.0.0.1:8000/health`
+
+## Banco de dados e deploy no Render
+
+Sim, você pode e deve manter os arquivos de banco local no `.gitignore`:
+
+```gitignore
+*.db
+*.sqlite
+*.sqlite3
+```
+
+O arquivo `pokedex.db` não deve ser enviado ao Git, pois é um artefato local e pode conter dados de desenvolvimento. Porém, ignorá-lo não cria persistência no Render. O filesystem padrão do Render é efêmero, então um SQLite gravado no diretório do projeto pode ser perdido em reinícios, novos deploys ou alterações da aplicação.
+
+Para produção:
+
+1. Crie um banco **Render Postgres**.
+2. Configure no Web Service a variável `DATABASE_URL` com a URL interna do banco.
+3. Configure também uma `SECRET_KEY` forte, com pelo menos 32 caracteres.
+4. Use o comando de build `pip install -r requirements.txt`.
+5. Use o comando de start:
 
 ```bash
-pip install -r requirements.txt
-copy .env.example .env
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-As configurações ficam no arquivo `.env`. Em produção, defina uma
-`SECRET_KEY` aleatória com pelo menos 32 caracteres e configure
-`DATABASE_URL` para o banco desejado.
+O código escolhe a conexão pelo valor de `DATABASE_URL`. Sem essa variável, ele usa `sqlite:///./pokedex.db`, adequado apenas para desenvolvimento local. Para um SQLite persistente no Render, seria necessário configurar um Persistent Disk e apontar o banco para um caminho dentro desse disco; PostgreSQL continua sendo a opção recomendada para produção.
 
-Documentação interativa: `http://localhost:8000/docs`
+### Seed de usuários de demonstração
 
-## Como o diagrama de classe virou código
+Para criar os usuários de demonstração manualmente, execute:
 
-| Elemento UML | Onde vira código |
-|---|---|
-| Classe (ex: `Pokemon`) | Classe SQLAlchemy em `app/models/` — representa a tabela |
-| Atributos da classe | Colunas SQLAlchemy no mesmo arquivo |
-| Associação/agregação (ex: Treinador 1—0..* Captura) | `ForeignKey` + `relationship()` nos dois lados |
-| Composição (Pokemon 1—0..* Evolucao) | `relationship(..., cascade="all, delete-orphan")` — a Evolucao não sobrevive sem o Pokemon |
-| Generalização (Usuario → Treinador/Pesquisador/Administrador) | **Herança de tabelas** (joined-table inheritance): tabela `usuarios` + uma tabela por subclasse, unidas por FK no `id`, com `polymorphic_on`/`polymorphic_identity` |
-| Método sem dependência de banco (ex: `getAtributosCombate()`, `verificarRequisitos()`, `autenticar()`) | Vira um método de verdade dentro da própria classe do model |
-| Método que depende do banco/outros usuários (ex: `registrarCaptura()`, `gerarRelatorio()`, `aprovarProposta()`) | Vira um **endpoint** no router correspondente — a classe não pode "ver" o banco sozinha, então essa lógica sobe uma camada |
-| Multiplicidade (`0..*`, `1..*`) | Validada via schemas Pydantic (`Field(min_length=...)`) e regras no router, já que o SQLAlchemy não impõe isso sozinho |
-
-`main.py` não contém nenhuma classe do diagrama — ele só monta o `FastAPI()`
-e inclui os routers.
-
-## Estrutura
-
-```
-app/
-  core/
-    security.py      # hashing de senha, JWT (delegado à API de Autenticação externa)
-    deps.py           # autorização via isinstance(), reproduzindo o polimorfismo do diagrama
-  models/
-    usuario.py        # Usuario (abstrato) + Treinador, Pesquisador, Administrador
-    pokemon.py         # Pokemon, Tipo (N:N), Evolucao (composição)
-    captura.py         # Captura, Favorito (extensão)
-    proposta.py        # Proposta
-    auditoria.py       # LogAuditoria
-    notificacao.py     # Notificacao (extensão)
-  schemas/             # contratos Pydantic, um arquivo por domínio
-  routers/
-    auth.py            # Autenticar Usuario, Recuperar Senha
-    pokemons.py        # Cadastrar Especie, Buscar, Comparar Atributos, Evolução, Editar/Remover
-    capturas.py         # Registrar Captura, Favoritos, Exportar Pokedex
-    propostas.py         # Propor Alteração, Aprovar/Recusar
-    reports.py          # Gerar Relatório Estatístico
-    auditoria.py         # Visualizar Histórico de Auditoria
-    notificacoes.py       # Receber Notificação de Evolução
-  database.py
-  main.py
+```powershell
+python -m app.seed
 ```
 
-## Ator → Método UML → Endpoint
+A seed é idempotente: e-mails que já existem são ignorados. Para que a aplicação repovoe automaticamente o banco quando ele for recriado no Render, adicione esta variável de ambiente:
 
-### Treinador (`Usuario` → herança)
-| Método/atributo do diagrama | Endpoint |
-|---|---|
-| `pokedexPessoal` | `GET /trainers/me/capturas` |
-| `registrarCaptura()` | `POST /trainers/me/capturas` |
-| `compararAtributos()` | `POST /pokemons/compare` |
-| `exportarPokedex()` | `GET /trainers/me/pokedex/export` |
+```env
+SEED_DEFAULT_USERS=true
+```
 
-### Pesquisador
-| Método | Endpoint |
-|---|---|
-| `cadastrarEspecie()` | `POST /pokemons` |
-| `proporAlteracao()` | `POST /propostas` |
+Usuários criados pela seed:
+
+| Perfil | Nome | E-mail | Senha inicial |
+|---|---|---|---|
+| Treinador | Ash Ketchum | `ash@pokedex.local` | `Pokemon@123` |
+| Treinador | Misty | `misty@pokedex.local` | `Pokemon@123` |
+| Treinador | Brock | `brock@pokedex.local` | `Pokemon@123` |
+| Treinador | May | `may@pokedex.local` | `Pokemon@123` |
+| Treinador | Dawn | `dawn@pokedex.local` | `Pokemon@123` |
+| Pesquisador | Professor Oak | `oak@pokedex.local` | `Pokemon@123` |
+| Pesquisador | Professor Elm | `elm@pokedex.local` | `Pokemon@123` |
+| Pesquisador | Professor Birch | `birch@pokedex.local` | `Pokemon@123` |
+| Pesquisador | Professor Rowan | `rowan@pokedex.local` | `Pokemon@123` |
+| Pesquisador | Professor Juniper | `juniper@pokedex.local` | `Pokemon@123` |
+| Administrador | Cynthia | `cynthia@pokedex.local` | `Pokemon@123` |
+| Administrador | Professor Kukui | `kukui@pokedex.local` | `Pokemon@123` |
+
+Essas credenciais são apenas para demonstração. Em produção, use uma seed privada ou altere todas as senhas imediatamente. A seed não substitui um banco persistente: se o banco gratuito for apagado, ela apenas recria os usuários, não os demais dados da aplicação.
+
+## Variáveis de ambiente
+
+Exemplo para desenvolvimento em um arquivo `.env`:
+
+```env
+DATABASE_URL=sqlite:///./pokedex.db
+SECRET_KEY=troque-por-uma-chave-secreta-com-mais-de-32-caracteres
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+POKEAPI_BASE_URL=https://pokeapi.co/api/v2
+SEED_DEFAULT_USERS=false
+```
+
+Nunca publique `.env`, tokens, senhas ou chaves reais no repositório.
+
+## Fluxo de autenticação
+
+1. Crie uma conta com `POST /auth/register`.
+2. Faça login com `POST /auth/login` usando formulário OAuth2.
+3. Informe o e-mail no campo `username` e a senha no campo `password`.
+4. Copie o `access_token` retornado.
+5. No Swagger, clique em **Authorize** e informe o token.
+6. A API valida o JWT e aplica a permissão de `TREINADOR`, `PESQUISADOR` ou `ADMINISTRADOR`.
+
+Exemplo de cadastro:
+
+```json
+{
+  "nome": "Jorge",
+  "email": "jorge@exemplo.com",
+  "senha": "minhaSenha123",
+  "tipo_usuario": "TREINADOR"
+}
+```
+
+## Endpoints principais
+
+### Autenticação e usuários
+
+| Método | Endpoint | Acesso | Descrição |
+|---|---|---|---|
+| `POST` | `/auth/register` | Público | Cadastra um usuário. |
+| `POST` | `/auth/login` | Público | Retorna um JWT. |
+| `POST` | `/auth/password-recovery` | Público | Solicita recuperação de senha. |
+| `POST` | `/auth/password-reset` | Público | Endpoint reservado para integração de redefinição. |
+
+### Treinador
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `POST` | `/trainers/me/capturas` | Registra uma captura. |
+| `GET` | `/trainers/me/capturas` | Lista a Pokédex pessoal. |
+| `POST` | `/trainers/me/favoritos` | Marca uma captura como favorita. |
+| `GET` | `/trainers/me/favoritos` | Lista os favoritos. |
+| `GET` | `/trainers/me/pokedex/export` | Exporta um resumo da Pokédex pessoal. |
+
+### Pesquisador e Pokémon
+
+| Método | Endpoint | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/pokemons` | Autenticado | Busca espécies por nome ou tipo. |
+| `GET` | `/pokemons/{pokemon_id}` | Autenticado | Consulta uma espécie. |
+| `GET` | `/pokemons/{pokemon_id}/evolucoes` | Autenticado | Consulta a cadeia de evolução. |
+| `POST` | `/pokemons` | Pesquisador/Admin | Cadastra uma espécie. |
+| `POST` | `/pokemons/{pokemon_id}/evolucoes` | Pesquisador/Admin | Registra uma evolução. |
+| `POST` | `/pokemons/compare` | Autenticado | Compara atributos de Pokémon. |
+| `GET` | `/pokemons/public-api/{nome}` | Pesquisador/Admin | Consulta dados na PokéAPI sem gravar no banco. |
+| `POST` | `/propostas` | Pesquisador | Envia uma proposta de alteração. |
 
 ### Administrador
-| Método | Endpoint |
-|---|---|
-| `aprovarProposta()` | `POST /propostas/{id}/review` |
-| `gerarRelatorio()` | `GET /reports/statistics` |
-| `visualizarAuditoria()` | `GET /audit-logs` |
 
-### Métodos "livres de banco" (ficam na própria classe)
-- `Usuario.autenticar(senha)` — usado internamente por `POST /auth/login`
-- `Pokemon.get_atributos_combate()` — usado por `POST /pokemons/compare`
-- `Evolucao.verificar_requisitos(captura)` — disponível para uso futuro em regras de evolução automática
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/propostas` | Lista propostas pendentes. |
+| `POST` | `/propostas/{proposta_id}/review` | Aprova ou rejeita uma proposta. |
+| `PUT` | `/pokemons/{pokemon_id}` | Edita um registro. |
+| `DELETE` | `/pokemons/{pokemon_id}` | Remove um registro. |
+| `GET` | `/reports/statistics` | Consulta estatísticas do sistema. |
+| `GET` | `/audit-logs` | Consulta o histórico de auditoria. |
 
-## Decisões e inferências (o que não estava 100% explícito no diagrama)
+A lista completa de campos, respostas e códigos HTTP está disponível no Swagger em `/docs`.
 
-1. **`Evolucao.pokemon_destino_id`**: o diagrama define `condicao` e
-   `verificarRequisitos()`, mas não mostra para qual Pokémon a evolução
-   leva. Adicionei esse campo (opcional) porque sem ele a funcionalidade
-   não faz sentido na prática — ajuste se seu modelo real representa isso
-   de outro jeito (ex: nome do destino como string).
-2. **`Proposta.administrador_id`**: o diagrama só mostra
-   `Administrador 1—0..* LogAuditoria`, sem ligação direta com `Proposta`.
-   Adicionei essa FK para saber quem aprovou/recusou cada proposta.
-3. **`Proposta.dados_antes` / `dados_depois`** são strings (texto livre),
-   como no diagrama — por isso a aprovação **não aplica automaticamente**
-   a mudança no Pokémon; ela fica registrada como histórico/auditoria, e
-   qualquer alteração real de dados usa o endpoint de edição do
-   Administrador (`PUT /pokemons/{id}`).
-4. **`Favorito` e `Notificacao`** não estão no diagrama de classe — vieram
-   do diagrama de casos de uso (Marcar Favorito, Receber Notificação de
-   Evolução) e foram mantidos como extensões, claramente comentadas no
-   código. Remova-os se quiser ficar 100% restrito ao diagrama de classe.
-5. **`LogAuditoria`** só é gerado por ações do `Administrador` (edição,
-   remoção, aprovação/recusa de propostas), pois é assim que o diagrama
-   liga essas duas classes.
+## Estrutura do projeto
 
-## Observações técnicas
+```text
+app/
+├── core/            # configurações, JWT e regras de permissão
+├── models/          # tabelas e relacionamentos SQLAlchemy
+├── schemas/         # validação de entrada e saída com Pydantic
+├── routers/         # endpoints separados por domínio
+├── database.py      # engine, sessões e conexão com o banco
+└── main.py          # criação da aplicação e registro dos routers
+```
 
-- Banco SQLite para simplicidade (`app/database.py`); troque a URL para
-  PostgreSQL/MySQL em produção.
-- O hash de senhas usa Argon2 por meio de `pwdlib`; JWT usa `PyJWT`.
-- O schema é criado no startup para facilitar o desenvolvimento local.
-  Para produção, use migrações versionadas com Alembic antes de remover
-  essa criação automática.
+Fluxo típico de uma requisição:
+
+```text
+Cliente -> Router -> Schema -> Regra de permissão -> Model/Banco -> JSON
+```
+
+## Próximos passos
+
+- Usar Alembic para versionar migrações do banco.
+- Criar testes automatizados para autenticação, permissões e endpoints.
+- Finalizar a integração de recuperação e redefinição de senha.

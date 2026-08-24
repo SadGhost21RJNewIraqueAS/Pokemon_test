@@ -27,7 +27,7 @@ def registrar_captura(
     db: Session = Depends(get_db),
     current_user: Treinador = Depends(require_treinador),
 ):
-    """Caso de uso Registrar Captura (Treinador)."""
+    """Registra uma captura na Pokédex pessoal do treinador autenticado."""
     pokemon = db.query(Pokemon).filter(Pokemon.id == payload.pokemon_id).first()
     if not pokemon:
         raise HTTPException(status_code=404, detail="Pokémon não encontrado")
@@ -37,7 +37,8 @@ def registrar_captura(
     db.commit()
     db.refresh(captura)
 
-    # Se o Pokémon possui evoluções cadastradas, notifica o treinador
+    # A notificação é criada depois de a captura existir, pois ela guarda o
+    # ID da captura que a originou.
     if pokemon.evolucoes:
         db.add(Notificacao(
             treinador_id=current_user.id,
@@ -72,6 +73,7 @@ def marcar_favorito(
     if not captura:
         raise HTTPException(status_code=404, detail="Captura não encontrada")
 
+    # Evita criar favoritos duplicados para a mesma captura.
     existente = (
         db.query(Favorito)
         .filter(Favorito.captura_id == payload.captura_id, Favorito.treinador_id == current_user.id)

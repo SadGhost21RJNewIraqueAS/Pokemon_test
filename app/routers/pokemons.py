@@ -31,6 +31,7 @@ POKEAPI_BASE_URL = settings.pokeapi_base_url.rstrip("/")
 
 
 def _get_or_create_tipos(db: Session, nomes: List[str]) -> List[Tipo]:
+    """Reutiliza tipos existentes e cria somente os que ainda não existem."""
     tipos = []
     for nome in nomes:
         tipo = db.query(Tipo).filter(Tipo.nome == nome.lower()).first()
@@ -49,8 +50,9 @@ def _get_or_create_tipos(db: Session, nomes: List[str]) -> List[Tipo]:
 )
 def consultar_api_publica(nome: str):
     """
-    Caso de uso Consultar API Pública — <<include>> de Cadastrar Especie.
-    Integração com o Sistema Externo 'Consumidor de API Pública'.
+    Consulta a PokéAPI e adapta a resposta para o contrato desta aplicação.
+
+    Nenhuma informação é gravada no banco; a rota serve de apoio ao cadastro.
     """
     try:
         resp = httpx.get(f"{POKEAPI_BASE_URL}/pokemon/{nome.lower()}", timeout=10)
@@ -59,6 +61,8 @@ def consultar_api_publica(nome: str):
         raise HTTPException(status_code=502, detail="Falha ao consultar API pública externa")
 
     data = resp.json()
+    # A PokéAPI envia os atributos em uma lista; o dicionário facilita buscar
+    # cada valor pelo nome (attack, defense, speed e hp).
     stats = {s["stat"]["name"]: s["base_stat"] for s in data["stats"]}
     return PublicApiPokemonResult(
         nome=data["name"],
@@ -82,10 +86,11 @@ def cadastrar_especie(
     db: Session = Depends(get_db),
     current_user: Pesquisador = Depends(require_pesquisador_ou_administrador),
 ):
-    """Caso de uso Cadastrar Especie (Pesquisador / Administrador)."""
+    """Cadastra uma espécie no banco (Pesquisador ou Administrador)."""
     if db.query(Pokemon).filter(Pokemon.numero_pokedex == payload.numero_pokedex).first():
         raise HTTPException(status_code=400, detail="Número de Pokedex já cadastrado")
 
+    # Tipos são tratados separadamente porque a relação Pokemon-Tipo é N:N.
     dados = payload.model_dump(exclude={"tipos"})
     pokemon = Pokemon(**dados)
     pokemon.tipos = _get_or_create_tipos(db, payload.tipos)

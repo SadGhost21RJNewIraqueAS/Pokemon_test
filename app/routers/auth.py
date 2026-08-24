@@ -26,7 +26,11 @@ _SUBCLASSE_POR_TIPO = {
 
 @router.post("/register", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
 def register_usuario(payload: UsuarioCreate, db: Session = Depends(get_db)):
-    """Cadastro inicial, instanciando a subclasse concreta correspondente."""
+    """Cadastra o usuário e armazena somente o hash da senha.
+
+    ``tipo_usuario`` decide qual subclasse será criada: Treinador,
+    Pesquisador ou Administrador.
+    """
     if db.query(Usuario).filter(Usuario.email == payload.email).first():
         raise HTTPException(status_code=400, detail="E-mail já cadastrado")
 
@@ -45,9 +49,10 @@ def register_usuario(payload: UsuarioCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
-    Caso de uso Autenticar Usuario. O campo `username` do formulário
-    OAuth2 é usado para receber o e-mail. A verificação usa o próprio
-    método `usuario.autenticar()` definido na classe Usuario.
+    Autentica o usuário e entrega um JWT para acessar as rotas protegidas.
+
+    Por convenção do OAuth2, o formulário chama o campo de ``username``;
+    nesta API ele deve receber o e-mail do usuário.
     """
     usuario = db.query(Usuario).filter(Usuario.email == form_data.username).first()
     if not usuario or not usuario.ativo or not usuario.autenticar(form_data.password):
@@ -55,6 +60,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha incorretos",
         )
+    # O token não contém a senha: somente a identificação necessária para
+    # recuperar o usuário nas próximas requisições.
     token = create_access_token(subject_email=usuario.email)
     return Token(access_token=token)
 
