@@ -145,6 +145,7 @@ Exemplo de cadastro:
 |---|---|---|---|
 | `POST` | `/auth/register` | Público | Cadastra um usuário. |
 | `POST` | `/auth/login` | Público | Retorna um JWT. |
+| `GET` | `/auth/users` | Administrador | Lista os usuários cadastrados. |
 | `POST` | `/auth/password-recovery` | Público | Solicita recuperação de senha. |
 | `POST` | `/auth/password-reset` | Público | Endpoint reservado para integração de redefinição. |
 

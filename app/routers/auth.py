@@ -1,7 +1,10 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_administrador
 from app.core.security import create_access_token, get_password_hash
 from app.database import get_db
 from app.models.usuario import Administrador, Pesquisador, Treinador, Usuario
@@ -44,6 +47,16 @@ def register_usuario(payload: UsuarioCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(usuario)
     return usuario
+
+
+@router.get(
+    "/users",
+    response_model=List[UsuarioRead],
+    dependencies=[Depends(require_administrador)],
+)
+def listar_usuarios(db: Session = Depends(get_db)):
+    """Lista todos os usuários cadastrados (Administrador)."""
+    return db.query(Usuario).order_by(Usuario.id).all()
 
 
 @router.post("/login", response_model=Token)
