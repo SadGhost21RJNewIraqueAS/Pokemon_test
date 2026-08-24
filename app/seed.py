@@ -9,18 +9,18 @@ from app.models import Administrador, Pesquisador, Treinador, Usuario
 SENHA_PADRAO = "Pokemon@123"
 
 USUARIOS_SEED = (
-    ("Ash Ketchum", "ash@pokedex.local", Treinador),
-    ("Misty", "misty@pokedex.local", Treinador),
-    ("Brock", "brock@pokedex.local", Treinador),
-    ("May", "may@pokedex.local", Treinador),
-    ("Dawn", "dawn@pokedex.local", Treinador),
-    ("Professor Oak", "oak@pokedex.local", Pesquisador),
-    ("Professor Elm", "elm@pokedex.local", Pesquisador),
-    ("Professor Birch", "birch@pokedex.local", Pesquisador),
-    ("Professor Rowan", "rowan@pokedex.local", Pesquisador),
-    ("Professor Juniper", "juniper@pokedex.local", Pesquisador),
-    ("Cynthia", "cynthia@pokedex.local", Administrador),
-    ("Professor Kukui", "kukui@pokedex.local", Administrador),
+    ("Ash Ketchum", "ash@pokedex.example.com", Treinador),
+    ("Misty", "misty@pokedex.example.com", Treinador),
+    ("Brock", "brock@pokedex.example.com", Treinador),
+    ("May", "may@pokedex.example.com", Treinador),
+    ("Dawn", "dawn@pokedex.example.com", Treinador),
+    ("Professor Oak", "oak@pokedex.example.com", Pesquisador),
+    ("Professor Elm", "elm@pokedex.example.com", Pesquisador),
+    ("Professor Birch", "birch@pokedex.example.com", Pesquisador),
+    ("Professor Rowan", "rowan@pokedex.example.com", Pesquisador),
+    ("Professor Juniper", "juniper@pokedex.example.com", Pesquisador),
+    ("Cynthia", "cynthia@pokedex.example.com", Administrador),
+    ("Professor Kukui", "kukui@pokedex.example.com", Administrador),
 )
 
 

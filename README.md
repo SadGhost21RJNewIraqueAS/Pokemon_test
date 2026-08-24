@@ -88,18 +88,18 @@ Usuários criados pela seed:
 
 | Perfil | Nome | E-mail | Senha inicial |
 |---|---|---|---|
-| Treinador | Ash Ketchum | `ash@pokedex.local` | `Pokemon@123` |
-| Treinador | Misty | `misty@pokedex.local` | `Pokemon@123` |
-| Treinador | Brock | `brock@pokedex.local` | `Pokemon@123` |
-| Treinador | May | `may@pokedex.local` | `Pokemon@123` |
-| Treinador | Dawn | `dawn@pokedex.local` | `Pokemon@123` |
-| Pesquisador | Professor Oak | `oak@pokedex.local` | `Pokemon@123` |
-| Pesquisador | Professor Elm | `elm@pokedex.local` | `Pokemon@123` |
-| Pesquisador | Professor Birch | `birch@pokedex.local` | `Pokemon@123` |
-| Pesquisador | Professor Rowan | `rowan@pokedex.local` | `Pokemon@123` |
-| Pesquisador | Professor Juniper | `juniper@pokedex.local` | `Pokemon@123` |
-| Administrador | Cynthia | `cynthia@pokedex.local` | `Pokemon@123` |
-| Administrador | Professor Kukui | `kukui@pokedex.local` | `Pokemon@123` |
+| Treinador | Ash Ketchum | `ash@pokedex.example.com` | `Pokemon@123` |
+| Treinador | Misty | `misty@pokedex.example.com` | `Pokemon@123` |
+| Treinador | Brock | `brock@pokedex.example.com` | `Pokemon@123` |
+| Treinador | May | `may@pokedex.example.com` | `Pokemon@123` |
+| Treinador | Dawn | `dawn@pokedex.example.com` | `Pokemon@123` |
+| Pesquisador | Professor Oak | `oak@pokedex.example.com` | `Pokemon@123` |
+| Pesquisador | Professor Elm | `elm@pokedex.example.com` | `Pokemon@123` |
+| Pesquisador | Professor Birch | `birch@pokedex.example.com` | `Pokemon@123` |
+| Pesquisador | Professor Rowan | `rowan@pokedex.example.com` | `Pokemon@123` |
+| Pesquisador | Professor Juniper | `juniper@pokedex.example.com` | `Pokemon@123` |
+| Administrador | Cynthia | `cynthia@pokedex.example.com` | `Pokemon@123` |
+| Administrador | Professor Kukui | `kukui@pokedex.example.com` | `Pokemon@123` |
 
 Essas credenciais são apenas para demonstração. Em produção, use uma seed privada ou altere todas as senhas imediatamente. A seed não substitui um banco persistente: se o banco gratuito for apagado, ela apenas recria os usuários, não os demais dados da aplicação.
 

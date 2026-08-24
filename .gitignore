@@ -6,11 +6,6 @@ env/
 # Configurações locais e segredos
 .env
 
-# Banco de dados local
-*.db
-*.sqlite
-*.sqlite3
-
 # Cache e arquivos compilados do Python
 __pycache__/
 *.py[cod]
